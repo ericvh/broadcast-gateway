@@ -22,6 +22,7 @@
 - [x] Fix Docker image references to use ericvh instead of your-username
 - [x] Create DEVELOPMENT.md with workflow reminders
 - [x] Update DEVELOPMENT.md with CHANGES.md maintenance guidelines
+- [x] Implement message boundary preservation for UDP to TCP conversion
 
 ## Future Considerations
 

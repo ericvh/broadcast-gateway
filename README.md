@@ -102,6 +102,56 @@ UDP Broadcasts → [Gateway Service] → TCP Clients
 
 The service maintains a list of connected TCP clients and forwards each received UDP broadcast message to all connected clients simultaneously.
 
+## Message Protocol
+
+To preserve message boundaries when converting from UDP datagrams to TCP stream, the gateway uses a length-prefixed protocol:
+
+**Format**: `[4-byte length][message data]`
+- First 4 bytes: Message length in big-endian format (unsigned 32-bit integer)
+- Remaining bytes: The original UDP datagram payload
+
+### Client Implementation Example
+
+```python
+import asyncio
+import struct
+
+async def read_messages():
+    reader, writer = await asyncio.open_connection('localhost', 8888)
+    
+    try:
+        while True:
+            # Read the 4-byte length prefix
+            length_data = await reader.readexactly(4)
+            message_length = struct.unpack('>I', length_data)[0]
+            
+            # Read the message data
+            message_data = await reader.readexactly(message_length)
+            print(f"Received: {message_data}")
+            
+    except asyncio.IncompleteReadError:
+        print("Connection closed")
+    finally:
+        writer.close()
+        await writer.wait_closed()
+
+# Or use the helper function from gateway.py
+from gateway import read_length_prefixed_message
+
+async def read_messages_with_helper():
+    reader, writer = await asyncio.open_connection('localhost', 8888)
+    
+    try:
+        while True:
+            message_data = await read_length_prefixed_message(reader)
+            if message_data is None:
+                break
+            print(f"Received: {message_data}")
+    finally:
+        writer.close()
+        await writer.wait_closed()
+```
+
 ## Security Considerations
 
 - The service requires `privileged: true` and host networking when using firewall features

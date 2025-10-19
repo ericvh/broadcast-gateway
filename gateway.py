@@ -4,6 +4,12 @@ Multicast Gateway Service
 
 A service that listens for UDP broadcasts on a specified port and relays them
 to connected TCP clients. Includes optional iptables firewall management.
+
+Message Protocol:
+TCP clients receive messages in the following format:
+[4-byte length in big-endian format][message data]
+
+This preserves message boundaries from UDP datagrams in the TCP stream.
 """
 
 import asyncio
@@ -13,6 +19,7 @@ import signal
 import sys
 import subprocess
 import os
+import struct
 from typing import Set, Optional
 from dataclasses import dataclass
 
@@ -124,12 +131,18 @@ class UDPToTCPGateway:
         
         self.logger.debug(f"UDP message from {addr}: {len(data)} bytes")
         
+        # Create message with length prefix to preserve boundaries
+        # Format: [4-byte length][message data]
+        message_length = len(data)
+        length_prefix = struct.pack('>I', message_length)  # Big-endian 4-byte unsigned int
+        message_with_boundary = length_prefix + data
+        
         # Forward to all connected TCP clients
         disconnected_clients = set()
         for writer in self.tcp_clients:
             try:
                 if not writer.is_closing():
-                    writer.write(data)
+                    writer.write(message_with_boundary)
                     # Don't await here to avoid blocking on slow clients
                     asyncio.create_task(self._drain_writer(writer))
                 else:
@@ -197,6 +210,34 @@ class UDPToTCPGateway:
             except subprocess.CalledProcessError as e:
                 # Rule might not exist, that's okay
                 self.logger.debug(f"Could not remove firewall rule '{rule}': {e}")
+
+
+async def read_length_prefixed_message(reader: asyncio.StreamReader) -> Optional[bytes]:
+    """
+    Helper function for TCP clients to read length-prefixed messages.
+    
+    Args:
+        reader: The asyncio StreamReader connected to the gateway
+        
+    Returns:
+        The message data bytes, or None if connection is closed
+        
+    Raises:
+        asyncio.IncompleteReadError: If the connection is closed unexpectedly
+        struct.error: If the length prefix is invalid
+    """
+    # Read the 4-byte length prefix
+    length_data = await reader.readexactly(4)
+    if not length_data:
+        return None
+    
+    # Unpack the length (big-endian 4-byte unsigned int)
+    message_length = struct.unpack('>I', length_data)[0]
+    
+    # Read the message data
+    message_data = await reader.readexactly(message_length)
+    
+    return message_data
 
 
 class UDPProtocol:

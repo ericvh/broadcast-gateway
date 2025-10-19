@@ -2,6 +2,30 @@
 
 This document tracks all changes, implementations, and modifications made to the multicast gateway project.
 
+## [v1.0.3] - 2024-12-19
+
+### Changed
+- **Message Protocol**: Implemented length-prefixed protocol to preserve message boundaries
+  - UDP datagrams now sent as `[4-byte length][message data]` over TCP
+  - Prevents message concatenation in TCP stream
+  - Uses big-endian 4-byte unsigned integer for length prefix
+
+### Added
+- **Client Helper Function**: Added `read_length_prefixed_message()` utility function
+  - Simplifies reading length-prefixed messages for TCP clients
+  - Handles proper message boundary detection
+  - Includes comprehensive error handling and documentation
+
+- **Message Protocol Documentation**: 
+  - Added detailed protocol specification in README.md
+  - Provided client implementation examples in Python
+  - Documented message format and boundary preservation strategy
+
+### Technical Details
+- Message boundaries now guaranteed between UDP datagrams
+- TCP clients must read 4-byte length prefix before reading message data
+- Helper function available for easy client implementation
+
 ## [v1.0.2] - 2024-12-19
 
 ### Changed
