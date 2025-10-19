@@ -31,6 +31,8 @@ spec:
         env:
         - name: UDP_PORT
           value: "50222"
+        - name: TCP_HOST
+          value: "your-tcp-server.com"  # Required: Set to your target TCP endpoint
         - name: TCP_PORT
           value: "8888"
         - name: BIND_ADDRESS
@@ -39,6 +41,8 @@ spec:
           value: "true"
         - name: FIREWALL_INTERFACE
           value: "any"
+        - name: RECONNECT_DELAY
+          value: "5.0"
         resources:
           requests:
             memory: "64Mi"

@@ -22,10 +22,12 @@ service:
 # Network configuration
 network:
   udpPort: 50222
+  tcpHost: "your-tcp-server.com"  # Required: Set to your target TCP endpoint
   tcpPort: 8888
   bindAddress: "0.0.0.0"
   enableFirewall: true
   firewallInterface: "any"
+  reconnectDelay: 5.0
 
 # Resource configuration
 resources:

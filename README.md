@@ -1,15 +1,16 @@
 # Multicast Gateway
 
-A Kubernetes-ready UDP to TCP multicast gateway service that listens for UDP broadcasts and relays them to TCP clients, with optional iptables firewall management.
+A Kubernetes-ready UDP to TCP multicast gateway service that listens for UDP broadcasts and forwards them to a connected TCP endpoint, with optional iptables firewall management.
 
 ## Overview
 
-This service provides a bridge between UDP broadcast traffic and TCP clients. It's designed to run in Kubernetes with host networking to ensure proper access to the host's network interfaces for both UDP listening and firewall rule management.
+This service provides a bridge between UDP broadcast traffic and a TCP endpoint. It connects to a specified TCP host/port at startup and forwards all received UDP broadcasts to that endpoint. It's designed to run in Kubernetes with host networking to ensure proper access to the host's network interfaces for both UDP listening and firewall rule management.
 
 ## Features
 
 - **UDP Broadcasting**: Listens for UDP broadcasts on a configurable port
-- **TCP Relaying**: Forwards received UDP messages to all connected TCP clients
+- **TCP Forwarding**: Connects to a specified TCP endpoint and forwards all UDP messages
+- **Automatic Reconnection**: Maintains connection with automatic retry on disconnection
 - **Host Networking**: Uses Kubernetes host networking for proper network interface access
 - **Firewall Management**: Optional iptables rule management for UDP port access
 - **Health Checks**: Built-in liveness and readiness probes
@@ -35,20 +36,38 @@ This service provides a bridge between UDP broadcast traffic and TCP clients. It
 ### Docker Run (Local Testing)
 
 ```bash
-# Basic run with default ports
+# Basic run - connecting to a TCP endpoint
 docker run -d --name multicast-gateway \
   --network host \
   --privileged \
-  ghcr.io/ericvh/multicast-gateway:latest
+  ghcr.io/ericvh/multicast-gateway:latest \
+  --tcp-host your-tcp-server.com
 
-# With custom ports and firewall enabled
+# With custom configuration
 docker run -d --name multicast-gateway \
   --network host \
   --privileged \
-  -e UDP_PORT=50222 \
-  -e TCP_PORT=8888 \
-  -e ENABLE_FIREWALL=true \
-  ghcr.io/ericvh/multicast-gateway:latest
+  ghcr.io/ericvh/multicast-gateway:latest \
+  --tcp-host your-tcp-server.com \
+  --tcp-port 9999 \
+  --udp-port 50222 \
+  --enable-firewall
+```
+
+### Direct Python Execution
+
+```bash
+# Basic usage
+python3 gateway.py --tcp-host your-tcp-server.com
+
+# With full configuration
+python3 gateway.py \
+  --tcp-host your-tcp-server.com \
+  --tcp-port 9999 \
+  --udp-port 50222 \
+  --bind-address 0.0.0.0 \
+  --enable-firewall \
+  --reconnect-delay 3.0
 ```
 
 ### Kubernetes Deployment
@@ -83,24 +102,27 @@ helm install multicast-gateway your-repo/multicast-gateway \
 
 ## Configuration
 
-The gateway can be configured using environment variables:
+The gateway can be configured using command line arguments:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `UDP_PORT` | 50222 | UDP port to listen for broadcasts |
-| `TCP_PORT` | 8888 | TCP port for client connections |
-| `BIND_ADDRESS` | 0.0.0.0 | Address to bind services to |
-| `ENABLE_FIREWALL` | false | Enable iptables firewall rules |
-| `FIREWALL_INTERFACE` | any | Network interface for firewall rules |
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `--tcp-host` | **Yes** | - | TCP host to connect to (required) |
+| `--udp-port` | No | 50222 | UDP port to listen for broadcasts |
+| `--tcp-port` | No | 8888 | TCP port to connect to |
+| `--bind-address` | No | 0.0.0.0 | Address to bind UDP listener to |
+| `--enable-firewall` | No | false | Enable iptables firewall rules |
+| `--firewall-interface` | No | any | Network interface for firewall rules |
+| `--reconnect-delay` | No | 5.0 | Delay between reconnection attempts (seconds) |
 
 ## Architecture
 
 ```
-UDP Broadcasts → [Gateway Service] → TCP Clients
-     Port 50222 →     (Relay)      →  Port 8888
+UDP Broadcasts → [Gateway Service] → TCP Endpoint
+     Port 50222 →    (Connect &    →  host:port
+                      Forward)
 ```
 
-The service maintains a list of connected TCP clients and forwards each received UDP broadcast message to all connected clients simultaneously.
+The service connects to a specified TCP endpoint at startup and forwards each received UDP broadcast message to that endpoint, maintaining connection health and automatically reconnecting if the connection is lost.
 
 ## Message Protocol
 
@@ -110,46 +132,48 @@ To preserve message boundaries when converting from UDP datagrams to TCP stream,
 - First 4 bytes: Message length in big-endian format (unsigned 32-bit integer)
 - Remaining bytes: The original UDP datagram payload
 
-### Client Implementation Example
+### TCP Endpoint Implementation Example
+
+To receive messages from the gateway, create a TCP server that accepts connections and reads the length-prefixed messages:
 
 ```python
 import asyncio
 import struct
-
-async def read_messages():
-    reader, writer = await asyncio.open_connection('localhost', 8888)
-    
-    try:
-        while True:
-            # Read the 4-byte length prefix
-            length_data = await reader.readexactly(4)
-            message_length = struct.unpack('>I', length_data)[0]
-            
-            # Read the message data
-            message_data = await reader.readexactly(message_length)
-            print(f"Received: {message_data}")
-            
-    except asyncio.IncompleteReadError:
-        print("Connection closed")
-    finally:
-        writer.close()
-        await writer.wait_closed()
-
-# Or use the helper function from gateway.py
 from gateway import read_length_prefixed_message
 
-async def read_messages_with_helper():
-    reader, writer = await asyncio.open_connection('localhost', 8888)
+async def handle_gateway_connection(reader, writer):
+    """Handle connection from the multicast gateway."""
+    client_addr = writer.get_extra_info('peername')
+    print(f"Gateway connected: {client_addr}")
     
     try:
         while True:
+            # Read length-prefixed message
             message_data = await read_length_prefixed_message(reader)
             if message_data is None:
                 break
-            print(f"Received: {message_data}")
+            print(f"Received UDP broadcast: {message_data}")
+            
+            # Process the UDP message here
+            # (e.g., send to other systems, store in database, etc.)
+            
+    except Exception as e:
+        print(f"Error reading from gateway: {e}")
     finally:
+        print(f"Gateway disconnected: {client_addr}")
         writer.close()
         await writer.wait_closed()
+
+async def start_tcp_server():
+    """Start TCP server to receive messages from gateway."""
+    server = await asyncio.start_server(handle_gateway_connection, '0.0.0.0', 8888)
+    print("TCP server listening on 0.0.0.0:8888")
+    
+    async with server:
+        await server.serve_forever()
+
+if __name__ == '__main__':
+    asyncio.run(start_tcp_server())
 ```
 
 ## Security Considerations

@@ -2,6 +2,35 @@
 
 This document tracks all changes, implementations, and modifications made to the multicast gateway project.
 
+## [v1.1.0] - 2024-12-19
+
+### Changed
+- **Architecture**: Changed from server mode to client mode - gateway now connects to TCP endpoints instead of accepting connections
+  - Added required `--tcp-host` parameter to specify target TCP endpoint
+  - Gateway now acts as a client connecting to the specified host:port
+  - Automatic reconnection when connection is lost
+  - Added `--reconnect-delay` parameter to control retry timing
+
+### Added
+- **Connection Management**: 
+  - `_maintain_tcp_connection()` method for persistent connection with auto-retry
+  - Connection health monitoring with timeout-based detection
+  - Graceful handling of connection failures and automatic reconnection
+- **Configuration Updates**:
+  - Updated `entrypoint.sh` to support `TCP_HOST` environment variable
+  - Updated Kubernetes deployment manifests with `TCP_HOST` environment variable
+  - Updated Helm chart values and templates for new TCP host configuration
+- **Enhanced Documentation**:
+  - Updated README.md with new client-mode architecture and usage examples
+  - Added TCP endpoint server implementation examples
+  - Updated configuration tables and quick start guides
+
+### Technical Details
+- Gateway now requires `--tcp-host` parameter to be specified
+- Maintains single persistent connection instead of managing multiple client connections
+- Connection is established at startup and maintained throughout service lifetime
+- UDP messages are dropped if no TCP connection is active (fail-safe behavior)
+
 ## [v1.0.3] - 2024-12-19
 
 ### Changed

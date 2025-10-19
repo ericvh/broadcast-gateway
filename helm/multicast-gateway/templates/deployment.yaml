@@ -47,6 +47,8 @@ spec:
           env:
             - name: UDP_PORT
               value: "{{ .Values.network.udpPort }}"
+            - name: TCP_HOST
+              value: "{{ .Values.network.tcpHost }}"
             - name: TCP_PORT
               value: "{{ .Values.network.tcpPort }}"
             - name: BIND_ADDRESS
@@ -55,6 +57,8 @@ spec:
               value: "{{ .Values.network.enableFirewall }}"
             - name: FIREWALL_INTERFACE
               value: "{{ .Values.network.firewallInterface }}"
+            - name: RECONNECT_DELAY
+              value: "{{ .Values.network.reconnectDelay }}"
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

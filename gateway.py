@@ -2,11 +2,12 @@
 """
 Multicast Gateway Service
 
-A service that listens for UDP broadcasts on a specified port and relays them
-to connected TCP clients. Includes optional iptables firewall management.
+A service that listens for UDP broadcasts on a specified port and forwards them
+to a connected TCP endpoint. Includes optional iptables firewall management and
+automatic reconnection capabilities.
 
 Message Protocol:
-TCP clients receive messages in the following format:
+TCP endpoint receives messages in the following format:
 [4-byte length in big-endian format][message data]
 
 This preserves message boundaries from UDP datagrams in the TCP stream.
@@ -28,21 +29,25 @@ from dataclasses import dataclass
 class Config:
     """Configuration for the gateway service."""
     udp_port: int
+    tcp_host: str
     tcp_port: int
     bind_address: str
     enable_firewall: bool
     firewall_interface: str = "any"
+    reconnect_delay: float = 5.0
 
 
 class UDPToTCPGateway:
-    """Gateway that forwards UDP broadcasts to TCP clients."""
+    """Gateway that forwards UDP broadcasts to a connected TCP endpoint."""
     
     def __init__(self, config: Config):
         self.config = config
-        self.tcp_clients: Set[asyncio.StreamWriter] = set()
+        self.tcp_writer: Optional[asyncio.StreamWriter] = None
+        self.tcp_reader: Optional[asyncio.StreamReader] = None
         self.udp_transport: Optional[asyncio.DatagramTransport] = None
-        self.tcp_server: Optional[asyncio.Server] = None
         self.logger = self._setup_logging()
+        self._connection_task: Optional[asyncio.Task] = None
+        self._shutdown = False
         
     def _setup_logging(self) -> logging.Logger:
         """Set up logging configuration."""
@@ -54,20 +59,12 @@ class UDPToTCPGateway:
     
     async def start(self):
         """Start the gateway service."""
-        self.logger.info(f"Starting multicast gateway: UDP:{self.config.udp_port} -> TCP:{self.config.tcp_port}")
+        self.logger.info(f"Starting multicast gateway: UDP:{self.config.udp_port} -> TCP:{self.config.tcp_host}:{self.config.tcp_port}")
         
         if self.config.enable_firewall:
             await self._setup_firewall()
         
-        # Start TCP server
-        self.tcp_server = await asyncio.start_server(
-            self._handle_tcp_connection,
-            self.config.bind_address,
-            self.config.tcp_port
-        )
-        self.logger.info(f"TCP server listening on {self.config.bind_address}:{self.config.tcp_port}")
-        
-        # Start UDP listener
+        # Start UDP listener first
         loop = asyncio.get_event_loop()
         self.udp_transport, _ = await loop.create_datagram_endpoint(
             lambda: UDPProtocol(self),
@@ -75,21 +72,32 @@ class UDPToTCPGateway:
             reuse_port=True
         )
         self.logger.info(f"UDP listener started on {self.config.bind_address}:{self.config.udp_port}")
+        
+        # Start connection to TCP endpoint
+        self._connection_task = asyncio.create_task(self._maintain_tcp_connection())
     
     async def stop(self):
         """Stop the gateway service."""
         self.logger.info("Stopping multicast gateway...")
+        self._shutdown = True
         
-        # Close TCP connections
-        for writer in self.tcp_clients.copy():
-            writer.close()
-            await writer.wait_closed()
+        # Cancel connection task
+        if self._connection_task:
+            self._connection_task.cancel()
+            try:
+                await self._connection_task
+            except asyncio.CancelledError:
+                pass
         
-        # Close servers
-        if self.tcp_server:
-            self.tcp_server.close()
-            await self.tcp_server.wait_closed()
+        # Close TCP connection
+        if self.tcp_writer and not self.tcp_writer.is_closing():
+            self.tcp_writer.close()
+            try:
+                await self.tcp_writer.wait_closed()
+            except Exception:
+                pass
         
+        # Close UDP transport
         if self.udp_transport:
             self.udp_transport.close()
         
@@ -98,35 +106,53 @@ class UDPToTCPGateway:
         
         self.logger.info("Gateway stopped")
     
-    async def _handle_tcp_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        """Handle new TCP client connections."""
-        client_addr = writer.get_extra_info('peername')
-        self.logger.info(f"New TCP client connected: {client_addr}")
-        
-        self.tcp_clients.add(writer)
-        
-        try:
-            # Keep connection alive and handle any client messages
-            while not writer.is_closing():
+    async def _maintain_tcp_connection(self):
+        """Maintain connection to the TCP endpoint with auto-reconnect."""
+        while not self._shutdown:
+            try:
+                self.logger.info(f"Connecting to TCP endpoint: {self.config.tcp_host}:{self.config.tcp_port}")
+                self.tcp_reader, self.tcp_writer = await asyncio.open_connection(
+                    self.config.tcp_host, 
+                    self.config.tcp_port
+                )
+                self.logger.info(f"Connected to TCP endpoint: {self.config.tcp_host}:{self.config.tcp_port}")
+                
+                # Monitor connection health by reading any incoming data
                 try:
-                    data = await asyncio.wait_for(reader.read(1024), timeout=1.0)
-                    if not data:
-                        break
+                    while not self.tcp_writer.is_closing() and not self._shutdown:
+                        await asyncio.wait_for(self.tcp_reader.read(1024), timeout=10.0)
                 except asyncio.TimeoutError:
+                    # No data received in 10 seconds - connection is still alive
                     continue
                 except Exception as e:
-                    self.logger.warning(f"Error reading from client {client_addr}: {e}")
+                    self.logger.warning(f"TCP connection error: {e}")
                     break
-        except Exception as e:
-            self.logger.error(f"Error handling client {client_addr}: {e}")
-        finally:
-            self.tcp_clients.discard(writer)
-            self.logger.info(f"TCP client disconnected: {client_addr}")
+                    
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.error(f"Failed to connect to TCP endpoint {self.config.tcp_host}:{self.config.tcp_port}: {e}")
+            
+            # Clean up current connection
+            if self.tcp_writer and not self.tcp_writer.is_closing():
+                self.tcp_writer.close()
+                try:
+                    await self.tcp_writer.wait_closed()
+                except Exception:
+                    pass
+            
+            self.tcp_reader = None
+            self.tcp_writer = None
+            
+            if not self._shutdown:
+                self.logger.info(f"Retrying connection in {self.config.reconnect_delay} seconds...")
+                await asyncio.sleep(self.config.reconnect_delay)
     
     def handle_udp_message(self, data: bytes, addr):
         """Handle incoming UDP broadcast message."""
-        if not self.tcp_clients:
-            # No clients connected, nothing to do
+        if not self.tcp_writer or self.tcp_writer.is_closing():
+            # No TCP connection active, skip message
+            self.logger.debug(f"UDP message from {addr} dropped - no TCP connection")
             return
         
         self.logger.debug(f"UDP message from {addr}: {len(data)} bytes")
@@ -137,23 +163,12 @@ class UDPToTCPGateway:
         length_prefix = struct.pack('>I', message_length)  # Big-endian 4-byte unsigned int
         message_with_boundary = length_prefix + data
         
-        # Forward to all connected TCP clients
-        disconnected_clients = set()
-        for writer in self.tcp_clients:
-            try:
-                if not writer.is_closing():
-                    writer.write(message_with_boundary)
-                    # Don't await here to avoid blocking on slow clients
-                    asyncio.create_task(self._drain_writer(writer))
-                else:
-                    disconnected_clients.add(writer)
-            except Exception as e:
-                self.logger.warning(f"Error forwarding to TCP client: {e}")
-                disconnected_clients.add(writer)
-        
-        # Clean up disconnected clients
-        for client in disconnected_clients:
-            self.tcp_clients.discard(client)
+        # Forward to TCP endpoint
+        try:
+            self.tcp_writer.write(message_with_boundary)
+            asyncio.create_task(self._drain_writer(self.tcp_writer))
+        except Exception as e:
+            self.logger.warning(f"Error forwarding UDP message to TCP endpoint: {e}")
     
     async def _drain_writer(self, writer: asyncio.StreamWriter):
         """Drain a writer and handle any errors."""
@@ -259,19 +274,23 @@ async def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description='UDP to TCP Multicast Gateway')
     parser.add_argument('--udp-port', type=int, default=50222, help='UDP port to listen on')
-    parser.add_argument('--tcp-port', type=int, default=8888, help='TCP port to serve on')
-    parser.add_argument('--bind-address', default='0.0.0.0', help='Address to bind to')
+    parser.add_argument('--tcp-host', required=True, help='TCP host to connect to')
+    parser.add_argument('--tcp-port', type=int, default=8888, help='TCP port to connect to')
+    parser.add_argument('--bind-address', default='0.0.0.0', help='Address to bind UDP listener to')
     parser.add_argument('--enable-firewall', action='store_true', help='Enable iptables firewall rules')
     parser.add_argument('--firewall-interface', default='any', help='Network interface for firewall rules')
+    parser.add_argument('--reconnect-delay', type=float, default=5.0, help='Delay between reconnection attempts (seconds)')
     
     args = parser.parse_args()
     
     config = Config(
         udp_port=args.udp_port,
+        tcp_host=args.tcp_host,
         tcp_port=args.tcp_port,
         bind_address=args.bind_address,
         enable_firewall=args.enable_firewall,
-        firewall_interface=args.firewall_interface
+        firewall_interface=args.firewall_interface,
+        reconnect_delay=args.reconnect_delay
     )
     
     gateway = UDPToTCPGateway(config)
