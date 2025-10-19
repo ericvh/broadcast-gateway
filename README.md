@@ -27,7 +27,7 @@ This service provides a bridge between UDP broadcast traffic and TCP clients. It
 │   ├── deployment.yaml          # Basic deployment
 │   └── deployment-with-nodeport.yaml # Deployment with NodePort service
 ├── helm/multicast-gateway/       # Helm chart
-└── README.md, TODO.md, CHANGES.md # Documentation
+└── README.md, TODO.md, CHANGES.md, DEVELOPMENT.md # Documentation
 ```
 
 ## Quick Start
@@ -39,7 +39,7 @@ This service provides a bridge between UDP broadcast traffic and TCP clients. It
 docker run -d --name multicast-gateway \
   --network host \
   --privileged \
-  ghcr.io/your-username/multicast-gateway:latest
+  ghcr.io/ericvh/multicast-gateway:latest
 
 # With custom ports and firewall enabled
 docker run -d --name multicast-gateway \
@@ -48,7 +48,7 @@ docker run -d --name multicast-gateway \
   -e UDP_PORT=50222 \
   -e TCP_PORT=8888 \
   -e ENABLE_FIREWALL=true \
-  ghcr.io/your-username/multicast-gateway:latest
+  ghcr.io/ericvh/multicast-gateway:latest
 ```
 
 ### Kubernetes Deployment

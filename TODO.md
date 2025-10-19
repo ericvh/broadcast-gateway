@@ -19,6 +19,9 @@
 - [x] Create Kubernetes deployment YAML manifests
 - [x] Create Helm chart for easy deployment
 - [x] Update comprehensive documentation
+- [x] Fix Docker image references to use ericvh instead of your-username
+- [x] Create DEVELOPMENT.md with workflow reminders
+- [x] Update DEVELOPMENT.md with CHANGES.md maintenance guidelines
 
 ## Future Considerations
 

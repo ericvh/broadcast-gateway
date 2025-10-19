@@ -2,6 +2,28 @@
 
 This document tracks all changes, implementations, and modifications made to the multicast gateway project.
 
+## [v1.0.2] - 2024-12-19
+
+### Changed
+- **Docker Image References**: Updated all Docker image references from `your-username` to `ericvh`
+  - Updated `k8s/deployment.yaml` container image reference
+  - Updated `k8s/deployment-with-nodeport.yaml` container image reference
+  - Updated `helm/multicast-gateway/values.yaml` image repository
+  - Updated `helm/multicast-gateway/Chart.yaml` home and sources URLs
+  - Updated `README.md` Docker run examples
+
+### Added
+- **Development Guidelines** (`DEVELOPMENT.md`):
+  - Comprehensive development workflow reminders for git commits
+  - Guidelines for maintaining TODO.md, README.md, and CHANGES.md
+  - File-specific documentation standards and templates
+  - Pre-release checklist and quick reference commands
+
+### Technical Details
+- All image references now point to `ghcr.io/ericvh/multicast-gateway`
+- GitHub repository URLs updated to reflect correct username
+- Added structured development workflow to ensure consistent documentation maintenance
+
 ## [v1.0.1] - 2024-12-19
 
 ### Changed

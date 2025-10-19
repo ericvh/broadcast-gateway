@@ -20,7 +20,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: gateway
-        image: ghcr.io/your-username/multicast-gateway:latest
+        image: ghcr.io/ericvh/multicast-gateway:latest
         ports:
         - name: tcp-port
           containerPort: 8888

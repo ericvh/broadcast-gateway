@@ -4,9 +4,9 @@ description: A UDP to TCP multicast gateway service for Kubernetes
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
-home: https://github.com/your-username/multicast-gateway
+home: https://github.com/ericvh/multicast-gateway
 sources:
-  - https://github.com/your-username/multicast-gateway
+  - https://github.com/ericvh/multicast-gateway
 maintainers:
   - name: Your Name
     email: your.email@example.com
