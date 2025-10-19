@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "multicast-gateway.fullname" . }}
+  labels:
+    {{- include "multicast-gateway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "multicast-gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "multicast-gateway.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Use host networking to access host network interfaces
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+            capabilities:
+              add:
+              - NET_ADMIN
+              - NET_RAW
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: tcp-port
+              containerPort: {{ .Values.network.tcpPort }}
+              protocol: TCP
+            - name: udp-port
+              containerPort: {{ .Values.network.udpPort }}
+              protocol: UDP
+          env:
+            - name: UDP_PORT
+              value: "{{ .Values.network.udpPort }}"
+            - name: TCP_PORT
+              value: "{{ .Values.network.tcpPort }}"
+            - name: BIND_ADDRESS
+              value: "{{ .Values.network.bindAddress }}"
+            - name: ENABLE_FIREWALL
+              value: "{{ .Values.network.enableFirewall }}"
+            - name: FIREWALL_INTERFACE
+              value: "{{ .Values.network.firewallInterface }}"
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

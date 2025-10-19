@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multicast-gateway
+  namespace: default
+  labels:
+    app: multicast-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multicast-gateway
+  template:
+    metadata:
+      labels:
+        app: multicast-gateway
+    spec:
+      # Use host networking to access host network interfaces
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: gateway
+        image: ghcr.io/your-username/multicast-gateway:latest
+        ports:
+        - name: tcp-port
+          containerPort: 8888
+          protocol: TCP
+        - name: udp-port
+          containerPort: 9999
+          protocol: UDP
+        env:
+        - name: UDP_PORT
+          value: "9999"
+        - name: TCP_PORT
+          value: "8888"
+        - name: BIND_ADDRESS
+          value: "0.0.0.0"
+        - name: ENABLE_FIREWALL
+          value: "true"
+        - name: FIREWALL_INTERFACE
+          value: "any"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        # Required for iptables operations
+        securityContext:
+          privileged: true
+          runAsUser: 0
+        livenessProbe:
+          tcpSocket:
+            port: 8888
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          tcpSocket:
+            port: 8888
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # Ensure the container gets proper network permissions
+        capabilities:
+          add:
+          - NET_ADMIN
+          - NET_RAW
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: multicast-gateway-service
+  namespace: default
+  labels:
+    app: multicast-gateway
+spec:
+  type: NodePort
+  ports:
+  - name: tcp-port
+    port: 8888
+    targetPort: 8888
+    nodePort: 30888
+    protocol: TCP
+  selector:
+    app: multicast-gateway
