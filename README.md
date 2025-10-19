@@ -45,7 +45,7 @@ docker run -d --name multicast-gateway \
 docker run -d --name multicast-gateway \
   --network host \
   --privileged \
-  -e UDP_PORT=9999 \
+  -e UDP_PORT=50222 \
   -e TCP_PORT=8888 \
   -e ENABLE_FIREWALL=true \
   ghcr.io/your-username/multicast-gateway:latest
@@ -75,7 +75,7 @@ helm install multicast-gateway your-repo/multicast-gateway
 
 # Install with custom configuration
 helm install multicast-gateway your-repo/multicast-gateway \
-  --set network.udpPort=9999 \
+  --set network.udpPort=50222 \
   --set network.tcpPort=8888 \
   --set network.enableFirewall=true \
   --set service.type=NodePort
@@ -87,7 +87,7 @@ The gateway can be configured using environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `UDP_PORT` | 9999 | UDP port to listen for broadcasts |
+| `UDP_PORT` | 50222 | UDP port to listen for broadcasts |
 | `TCP_PORT` | 8888 | TCP port for client connections |
 | `BIND_ADDRESS` | 0.0.0.0 | Address to bind services to |
 | `ENABLE_FIREWALL` | false | Enable iptables firewall rules |
@@ -97,7 +97,7 @@ The gateway can be configured using environment variables:
 
 ```
 UDP Broadcasts → [Gateway Service] → TCP Clients
-     Port 9999  →     (Relay)      →  Port 8888
+     Port 50222 →     (Relay)      →  Port 8888
 ```
 
 The service maintains a list of connected TCP clients and forwards each received UDP broadcast message to all connected clients simultaneously.
@@ -120,7 +120,7 @@ docker build -t multicast-gateway:latest .
 
 ```bash
 # Test UDP to TCP forwarding locally
-python3 gateway.py --udp-port 9999 --tcp-port 8888 --enable-firewall
+python3 gateway.py --udp-port 50222 --tcp-port 8888 --enable-firewall
 ```
 
 ## CI/CD

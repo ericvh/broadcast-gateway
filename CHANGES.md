@@ -2,6 +2,21 @@
 
 This document tracks all changes, implementations, and modifications made to the multicast gateway project.
 
+## [v1.0.1] - 2024-12-19
+
+### Changed
+- **Default UDP Port**: Updated default UDP broadcast port from 9999 to 50222 across all configuration files
+  - Updated `gateway.py` argument parser default
+  - Updated `Dockerfile` environment variable
+  - Updated `entrypoint.sh` default value
+  - Updated Kubernetes deployment manifests
+  - Updated Helm chart values and templates
+  - Updated README.md documentation and examples
+
+### Technical Details
+- All references to the default UDP port updated consistently across the codebase
+- No breaking changes to existing functionality, only default value modification
+
 ## [v1.0.0] - 2024-12-19
 
 ### Added
@@ -58,7 +73,7 @@ This document tracks all changes, implementations, and modifications made to the
 - **Deployment**: Kubernetes-native with host networking and proper resource management
 
 ### Configuration
-- **Default Ports**: UDP 9999, TCP 8888
+- **Default Ports**: UDP 50222, TCP 8888
 - **Environment Variables**: Full configuration via environment variables
 - **Firewall**: Optional iptables integration with interface-specific rules
 

@@ -21,7 +21,7 @@ service:
 
 # Network configuration
 network:
-  udpPort: 9999
+  udpPort: 50222
   tcpPort: 8888
   bindAddress: "0.0.0.0"
   enableFirewall: true

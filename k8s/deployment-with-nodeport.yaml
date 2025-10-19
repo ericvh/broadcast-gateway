@@ -26,11 +26,11 @@ spec:
           containerPort: 8888
           protocol: TCP
         - name: udp-port
-          containerPort: 9999
+          containerPort: 50222
           protocol: UDP
         env:
         - name: UDP_PORT
-          value: "9999"
+          value: "50222"
         - name: TCP_PORT
           value: "8888"
         - name: BIND_ADDRESS
