@@ -23,7 +23,7 @@ spec:
         image: ghcr.io/ericvh/broadcast-gateway:latest
         ports:
         - name: tcp-port
-          containerPort: 8888
+          containerPort: 50222
           protocol: TCP
         - name: udp-port
           containerPort: 50222
@@ -34,7 +34,7 @@ spec:
         - name: TCP_HOST
           value: "your-tcp-server.com"  # Required: Set to your target TCP endpoint
         - name: TCP_PORT
-          value: "8888"
+          value: "50222"
         - name: BIND_ADDRESS
           value: "0.0.0.0"
         - name: ENABLE_FIREWALL
@@ -56,12 +56,12 @@ spec:
           runAsUser: 0
         livenessProbe:
           tcpSocket:
-            port: 8888
+            port: 50222
           initialDelaySeconds: 30
           periodSeconds: 30
         readinessProbe:
           tcpSocket:
-            port: 8888
+            port: 50222
           initialDelaySeconds: 5
           periodSeconds: 10
         # Ensure the container gets proper network permissions
@@ -81,8 +81,8 @@ spec:
   type: ClusterIP
   ports:
   - name: tcp-port
-    port: 8888
-    targetPort: 8888
+    port: 50222
+    targetPort: 50222
     protocol: TCP
   selector:
     app: broadcast-gateway

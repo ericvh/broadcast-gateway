@@ -283,7 +283,7 @@ async def main():
     parser = argparse.ArgumentParser(description='UDP to TCP Broadcast Gateway')
     parser.add_argument('--udp-port', type=int, default=50222, help='UDP port to listen on')
     parser.add_argument('--tcp-host', required=True, help='TCP host to connect to')
-    parser.add_argument('--tcp-port', type=int, default=8888, help='TCP port to connect to')
+    parser.add_argument('--tcp-port', type=int, default=50222, help='TCP port to connect to')
     parser.add_argument('--bind-address', default='0.0.0.0', help='Address to bind UDP listener to')
     parser.add_argument('--enable-firewall', action='store_true', help='Enable iptables firewall rules')
     parser.add_argument('--firewall-interface', default='any', help='Network interface for firewall rules')

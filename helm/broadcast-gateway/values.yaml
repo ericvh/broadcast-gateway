@@ -16,14 +16,14 @@ fullnameOverride: ""
 
 service:
   type: ClusterIP
-  tcpPort: 8888
-  nodePort: 30888
+  tcpPort: 50222
+  nodePort: 30222
 
 # Network configuration
 network:
   udpPort: 50222
   tcpHost: "your-tcp-server.com"  # Required: Set to your target TCP endpoint
-  tcpPort: 8888
+  tcpPort: 50222
   bindAddress: "0.0.0.0"
   enableFirewall: true
   firewallInterface: "any"
@@ -62,12 +62,12 @@ podAnnotations: {}
 # Health checks
 livenessProbe:
   tcpSocket:
-    port: 8888
+    port: 50222
   initialDelaySeconds: 30
   periodSeconds: 30
 
 readinessProbe:
   tcpSocket:
-    port: 8888
+    port: 50222
   initialDelaySeconds: 5
   periodSeconds: 10

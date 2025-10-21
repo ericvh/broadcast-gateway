@@ -95,7 +95,7 @@ helm install broadcast-gateway your-repo/broadcast-gateway
 # Install with custom configuration
 helm install broadcast-gateway your-repo/broadcast-gateway \
   --set network.udpPort=50222 \
-  --set network.tcpPort=8888 \
+  --set network.tcpPort=50222 \
   --set network.enableFirewall=true \
   --set service.type=NodePort
 ```
@@ -108,7 +108,7 @@ The gateway can be configured using command line arguments:
 |----------|----------|---------|-------------|
 | `--tcp-host` | **Yes** | - | TCP host to connect to (required) |
 | `--udp-port` | No | 50222 | UDP port to listen for broadcasts |
-| `--tcp-port` | No | 8888 | TCP port to connect to |
+| `--tcp-port` | No | 50222 | TCP port to connect to |
 | `--bind-address` | No | 0.0.0.0 | Address to bind UDP listener to |
 | `--enable-firewall` | No | false | Enable iptables firewall rules |
 | `--firewall-interface` | No | any | Network interface for firewall rules |
@@ -166,8 +166,8 @@ async def handle_gateway_connection(reader, writer):
 
 async def start_tcp_server():
     """Start TCP server to receive messages from gateway."""
-    server = await asyncio.start_server(handle_gateway_connection, '0.0.0.0', 8888)
-    print("TCP server listening on 0.0.0.0:8888")
+    server = await asyncio.start_server(handle_gateway_connection, '0.0.0.0', 50222)
+    print("TCP server listening on 0.0.0.0:50222")
     
     async with server:
         await server.serve_forever()
@@ -194,7 +194,7 @@ docker build -t broadcast-gateway:latest .
 
 ```bash
 # Test UDP to TCP forwarding locally
-python3 gateway.py --udp-port 50222 --tcp-port 8888 --enable-firewall
+python3 gateway.py --udp-port 50222 --tcp-port 50222 --enable-firewall
 ```
 
 ## CI/CD

@@ -26,11 +26,11 @@ RUN useradd -m -u 1000 gateway && \
     chown -R gateway:gateway /app
 
 # Expose the TCP port that clients will connect to
-EXPOSE 8888
+EXPOSE 50222
 
 # Default command arguments
 ENV UDP_PORT=50222
-ENV TCP_PORT=8888
+ENV TCP_PORT=50222
 ENV BIND_ADDRESS=0.0.0.0
 ENV ENABLE_FIREWALL=false
 ENV FIREWALL_INTERFACE=any

@@ -2,6 +2,23 @@
 
 This document tracks all changes, implementations, and modifications made to the broadcast gateway project.
 
+## [v1.1.3] - 2024-12-19
+
+### Changed
+- **Default TCP Port**: Changed default TCP port from 8888 to 50222
+  - Updated gateway.py argument parser default value
+  - Updated entrypoint.sh environment variable default
+  - Updated Dockerfile EXPOSE and ENV TCP_PORT
+  - Updated Kubernetes deployment manifests for container ports and health checks
+  - Updated Helm chart values and health check configurations
+  - Updated README.md configuration table and examples
+  - Updated CHANGES.md default port documentation
+
+### Technical Details
+- Both UDP listening port and default TCP connection port now use 50222
+- Maintains consistency across all deployment configurations
+- Updated NodePort from 30888 to 30222 in deployment-with-nodeport.yaml
+
 ## [v1.1.2] - 2024-12-19
 
 ### Changed
@@ -175,7 +192,7 @@ This document tracks all changes, implementations, and modifications made to the
 - **Deployment**: Kubernetes-native with host networking and proper resource management
 
 ### Configuration
-- **Default Ports**: UDP 50222, TCP 8888
+- **Default Ports**: UDP 50222, TCP 50222
 - **Environment Variables**: Full configuration via environment variables
 - **Firewall**: Optional iptables integration with interface-specific rules
 
