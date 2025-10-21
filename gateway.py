@@ -117,15 +117,35 @@ class UDPToTCPGateway:
                 )
                 self.logger.info(f"Connected to TCP endpoint: {self.config.tcp_host}:{self.config.tcp_port}")
                 
-                # Monitor connection health by reading any incoming data
+                # Create a task to detect when the connection is closed by the remote end
+                # We'll use a simple approach: try to read from the connection.
+                # If it returns empty data or raises an exception, the connection is closed.
+                async def connection_watcher():
+                    try:
+                        # Just wait for the connection to close naturally
+                        while not self._shutdown and not self.tcp_writer.is_closing():
+                            # Try to read - this will fail when connection closes
+                            try:
+                                data = await asyncio.wait_for(self.tcp_reader.read(1), timeout=1.0)
+                                if not data:  # EOF - connection closed
+                                    break
+                            except asyncio.TimeoutError:
+                                continue  # No data, but connection still alive
+                            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+                                break  # Connection closed
+                    except Exception:
+                        pass  # Connection closed
+                
+                # Wait for the connection watcher to complete (which means connection closed)
+                watcher_task = asyncio.create_task(connection_watcher())
                 try:
-                    while not self.tcp_writer.is_closing() and not self._shutdown:
-                        await asyncio.wait_for(self.tcp_reader.read(1024), timeout=10.0)
-                except asyncio.TimeoutError:
-                    # No data received in 10 seconds - connection is still alive
-                    continue
-                except Exception as e:
-                    self.logger.warning(f"TCP connection error: {e}")
+                    await watcher_task
+                except asyncio.CancelledError:
+                    watcher_task.cancel()
+                    try:
+                        await watcher_task
+                    except asyncio.CancelledError:
+                        pass
                     break
                     
             except asyncio.CancelledError:
@@ -145,7 +165,7 @@ class UDPToTCPGateway:
             self.tcp_writer = None
             
             if not self._shutdown:
-                self.logger.info(f"Retrying connection in {self.config.reconnect_delay} seconds...")
+                self.logger.info(f"Connection lost, retrying in {self.config.reconnect_delay} seconds...")
                 await asyncio.sleep(self.config.reconnect_delay)
     
     def handle_udp_message(self, data: bytes, addr):
@@ -163,17 +183,25 @@ class UDPToTCPGateway:
         length_prefix = struct.pack('>I', message_length)  # Big-endian 4-byte unsigned int
         message_with_boundary = length_prefix + data
         
-        # Forward to TCP endpoint
+        # Forward to TCP endpoint with better error handling
         try:
             self.tcp_writer.write(message_with_boundary)
-            asyncio.create_task(self._drain_writer(self.tcp_writer))
+            # Don't create a separate task for draining - do it synchronously to avoid race conditions
+            asyncio.create_task(self._drain_writer_safe(self.tcp_writer))
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
+            self.logger.warning(f"TCP connection lost while forwarding message: {e}")
+            # Mark the connection as closing so it will be cleaned up
+            if self.tcp_writer:
+                self.tcp_writer.close()
         except Exception as e:
             self.logger.warning(f"Error forwarding UDP message to TCP endpoint: {e}")
     
-    async def _drain_writer(self, writer: asyncio.StreamWriter):
-        """Drain a writer and handle any errors."""
+    async def _drain_writer_safe(self, writer: asyncio.StreamWriter):
+        """Safely drain a writer and handle connection errors."""
         try:
             await writer.drain()
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
+            self.logger.debug(f"Connection lost during drain: {e}")
         except Exception as e:
             self.logger.warning(f"Error draining writer: {e}")
     

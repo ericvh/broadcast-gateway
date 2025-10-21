@@ -2,6 +2,21 @@
 
 This document tracks all changes, implementations, and modifications made to the broadcast gateway project.
 
+## [v1.1.4] - 2024-12-19
+
+### Fixed
+- **TCP Connection Stability**: Improved connection management to prevent repeated disconnections
+  - Replaced problematic connection monitoring that was causing frequent reconnections
+  - Implemented cleaner connection watcher that only detects actual connection closure
+  - Enhanced error handling in message forwarding to properly handle connection errors
+  - Reduced timeout from 10 seconds to 1 second for faster connection closure detection
+
+### Technical Details
+- Connection monitoring now uses a simple watcher that only breaks when connection actually closes
+- Better exception handling for ConnectionResetError, ConnectionAbortedError, and BrokenPipeError
+- Improved `_drain_writer_safe` method with proper connection error handling
+- Eliminated race conditions in connection state management
+
 ## [v1.1.3] - 2024-12-19
 
 ### Changed
