@@ -255,11 +255,19 @@ async def read_length_prefixed_message(reader: asyncio.StreamReader) -> Optional
     return message_data
 
 
-class UDPProtocol:
+class UDPProtocol(asyncio.DatagramProtocol):
     """Protocol class for handling UDP datagrams."""
     
     def __init__(self, gateway: UDPToTCPGateway):
         self.gateway = gateway
+    
+    def connection_made(self, transport):
+        """Called when a connection is made."""
+        self.gateway.logger.debug("UDP connection made")
+    
+    def connection_lost(self, exc):
+        """Called when the connection is lost or closed."""
+        self.gateway.logger.debug(f"UDP connection lost: {exc}")
     
     def datagram_received(self, data: bytes, addr):
         """Called when a UDP datagram is received."""

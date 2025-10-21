@@ -2,6 +2,18 @@
 
 This document tracks all changes, implementations, and modifications made to the multicast gateway project.
 
+## [v1.1.1] - 2024-12-19
+
+### Fixed
+- **UDPProtocol Error**: Fixed missing `connection_made` and `connection_lost` methods in UDPProtocol class
+  - UDPProtocol now properly inherits from `asyncio.DatagramProtocol`
+  - Added required protocol methods that asyncio expects for datagram transports
+  - Resolves error: `'UDPProtocol' object has no attribute 'connection_made'`
+
+### Technical Details
+- UDPProtocol class now implements the complete DatagramProtocol interface
+- Added proper connection lifecycle management for UDP transport
+
 ## [v1.1.0] - 2024-12-19
 
 ### Changed
