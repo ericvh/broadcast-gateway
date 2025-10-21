@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "multicast-gateway.fullname" . }}
+  name: {{ include "broadcast-gateway.fullname" . }}
   labels:
-    {{- include "multicast-gateway.labels" . | nindent 4 }}
+    {{- include "broadcast-gateway.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "multicast-gateway.selectorLabels" . | nindent 6 }}
+      {{- include "broadcast-gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -16,7 +16,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "multicast-gateway.selectorLabels" . | nindent 8 }}
+        {{- include "broadcast-gateway.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

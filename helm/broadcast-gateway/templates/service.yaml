@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "multicast-gateway.fullname" . }}
+  name: {{ include "broadcast-gateway.fullname" . }}
   labels:
-    {{- include "multicast-gateway.labels" . | nindent 4 }}
+    {{- include "broadcast-gateway.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -15,4 +15,4 @@ spec:
       {{- end }}
       name: tcp-port
   selector:
-    {{- include "multicast-gateway.selectorLabels" . | nindent 4 }}
+    {{- include "broadcast-gateway.selectorLabels" . | nindent 4 }}

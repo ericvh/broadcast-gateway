@@ -1,6 +1,6 @@
-# Multicast Gateway
+# Broadcast Gateway
 
-A Kubernetes-ready UDP to TCP multicast gateway service that listens for UDP broadcasts and forwards them to a connected TCP endpoint, with optional iptables firewall management.
+A Kubernetes-ready UDP to TCP broadcast gateway service that listens for UDP broadcasts and forwards them to a connected TCP endpoint, with optional iptables firewall management.
 
 ## Overview
 
@@ -27,7 +27,7 @@ This service provides a bridge between UDP broadcast traffic and a TCP endpoint.
 ├── k8s/                         # Kubernetes deployment manifests
 │   ├── deployment.yaml          # Basic deployment
 │   └── deployment-with-nodeport.yaml # Deployment with NodePort service
-├── helm/multicast-gateway/       # Helm chart
+├── helm/broadcast-gateway/       # Helm chart
 └── README.md, TODO.md, CHANGES.md, DEVELOPMENT.md # Documentation
 ```
 
@@ -37,17 +37,17 @@ This service provides a bridge between UDP broadcast traffic and a TCP endpoint.
 
 ```bash
 # Basic run - connecting to a TCP endpoint
-docker run -d --name multicast-gateway \
+docker run -d --name broadcast-gateway \
   --network host \
   --privileged \
-  ghcr.io/ericvh/multicast-gateway:latest \
+  ghcr.io/ericvh/broadcast-gateway:latest \
   --tcp-host your-tcp-server.com
 
 # With custom configuration
-docker run -d --name multicast-gateway \
+docker run -d --name broadcast-gateway \
   --network host \
   --privileged \
-  ghcr.io/ericvh/multicast-gateway:latest \
+  ghcr.io/ericvh/broadcast-gateway:latest \
   --tcp-host your-tcp-server.com \
   --tcp-port 9999 \
   --udp-port 50222 \
@@ -90,10 +90,10 @@ helm repo add your-repo https://your-helm-repo.com
 helm repo update
 
 # Install with default values
-helm install multicast-gateway your-repo/multicast-gateway
+helm install broadcast-gateway your-repo/broadcast-gateway
 
 # Install with custom configuration
-helm install multicast-gateway your-repo/multicast-gateway \
+helm install broadcast-gateway your-repo/broadcast-gateway \
   --set network.udpPort=50222 \
   --set network.tcpPort=8888 \
   --set network.enableFirewall=true \
@@ -142,7 +142,7 @@ import struct
 from gateway import read_length_prefixed_message
 
 async def handle_gateway_connection(reader, writer):
-    """Handle connection from the multicast gateway."""
+    """Handle connection from the broadcast gateway."""
     client_addr = writer.get_extra_info('peername')
     print(f"Gateway connected: {client_addr}")
     
@@ -187,7 +187,7 @@ if __name__ == '__main__':
 ### Building the Docker Image
 
 ```bash
-docker build -t multicast-gateway:latest .
+docker build -t broadcast-gateway:latest .
 ```
 
 ### Running Tests

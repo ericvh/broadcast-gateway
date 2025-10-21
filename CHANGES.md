@@ -1,6 +1,21 @@
 # Change Log
 
-This document tracks all changes, implementations, and modifications made to the multicast gateway project.
+This document tracks all changes, implementations, and modifications made to the broadcast gateway project.
+
+## [v1.1.2] - 2024-12-19
+
+### Changed
+- **Project Naming**: Renamed all references from `multicast-gateway` to `broadcast-gateway`
+  - Updated all Kubernetes deployment manifests and service names
+  - Updated Helm chart name, directory, and all template references
+  - Updated Docker image references and container names in examples
+  - Updated documentation, logging, and code comments
+  - Renamed Helm chart directory from `helm/multicast-gateway/` to `helm/broadcast-gateway/`
+
+### Technical Details
+- All instances of "multicast-gateway" replaced with "broadcast-gateway"
+- Updated project title and descriptions throughout codebase
+- Maintained backward compatibility for existing deployments through environment variables
 
 ## [v1.1.1] - 2024-12-19
 
@@ -73,8 +88,8 @@ This document tracks all changes, implementations, and modifications made to the
 - **Docker Image References**: Updated all Docker image references from `your-username` to `ericvh`
   - Updated `k8s/deployment.yaml` container image reference
   - Updated `k8s/deployment-with-nodeport.yaml` container image reference
-  - Updated `helm/multicast-gateway/values.yaml` image repository
-  - Updated `helm/multicast-gateway/Chart.yaml` home and sources URLs
+  - Updated `helm/broadcast-gateway/values.yaml` image repository
+  - Updated `helm/broadcast-gateway/Chart.yaml` home and sources URLs
   - Updated `README.md` Docker run examples
 
 ### Added
@@ -85,7 +100,7 @@ This document tracks all changes, implementations, and modifications made to the
   - Pre-release checklist and quick reference commands
 
 ### Technical Details
-- All image references now point to `ghcr.io/ericvh/multicast-gateway`
+- All image references now point to `ghcr.io/ericvh/broadcast-gateway`
 - GitHub repository URLs updated to reflect correct username
 - Added structured development workflow to ensure consistent documentation maintenance
 
@@ -134,7 +149,7 @@ This document tracks all changes, implementations, and modifications made to the
   - Privileged security context for firewall operations
   - Resource limits and health probes
 
-- **Helm Chart** (`helm/multicast-gateway/`):
+- **Helm Chart** (`helm/broadcast-gateway/`):
   - Complete Helm chart with configurable values
   - Template-based deployment and service definitions
   - Support for various service types (ClusterIP, NodePort)

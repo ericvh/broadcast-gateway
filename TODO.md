@@ -24,6 +24,7 @@
 - [x] Update DEVELOPMENT.md with CHANGES.md maintenance guidelines
 - [x] Implement message boundary preservation for UDP to TCP conversion
 - [x] Refactor gateway to connect to TCP endpoints instead of serving clients
+- [x] Rename all references from multicast-gateway to broadcast-gateway
 
 ## Future Considerations
 

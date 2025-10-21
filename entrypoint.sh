@@ -37,7 +37,7 @@ if [ "$RECONNECT_DELAY" != "5.0" ]; then
     ARGS="$ARGS --reconnect-delay $RECONNECT_DELAY"
 fi
 
-echo "Starting Multicast Gateway with args: $ARGS"
+echo "Starting Broadcast Gateway with args: $ARGS"
 
 # Execute the Python gateway
 exec python gateway.py $ARGS

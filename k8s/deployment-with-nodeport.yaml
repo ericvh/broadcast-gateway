@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: multicast-gateway
+  name: broadcast-gateway
   namespace: default
   labels:
-    app: multicast-gateway
+    app: broadcast-gateway
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: multicast-gateway
+      app: broadcast-gateway
   template:
     metadata:
       labels:
-        app: multicast-gateway
+        app: broadcast-gateway
     spec:
       # Use host networking to access host network interfaces
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: gateway
-        image: ghcr.io/ericvh/multicast-gateway:latest
+        image: ghcr.io/ericvh/broadcast-gateway:latest
         ports:
         - name: tcp-port
           containerPort: 8888
@@ -73,10 +73,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: multicast-gateway-service
+  name: broadcast-gateway-service
   namespace: default
   labels:
-    app: multicast-gateway
+    app: broadcast-gateway
 spec:
   type: NodePort
   ports:
@@ -86,4 +86,4 @@ spec:
     nodePort: 30888
     protocol: TCP
   selector:
-    app: multicast-gateway
+    app: broadcast-gateway

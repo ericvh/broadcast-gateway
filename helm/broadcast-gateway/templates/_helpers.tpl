@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "multicast-gateway.name" -}}
+{{- define "broadcast-gateway.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "multicast-gateway.fullname" -}}
+{{- define "broadcast-gateway.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "multicast-gateway.chart" -}}
+{{- define "broadcast-gateway.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "multicast-gateway.labels" -}}
-helm.sh/chart: {{ include "multicast-gateway.chart" . }}
-{{ include "multicast-gateway.selectorLabels" . }}
+{{- define "broadcast-gateway.labels" -}}
+helm.sh/chart: {{ include "broadcast-gateway.chart" . }}
+{{ include "broadcast-gateway.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,7 +45,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "multicast-gateway.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "multicast-gateway.name" . }}
+{{- define "broadcast-gateway.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "broadcast-gateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

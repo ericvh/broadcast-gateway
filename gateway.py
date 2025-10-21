@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Multicast Gateway Service
+Broadcast Gateway Service
 
 A service that listens for UDP broadcasts on a specified port and forwards them
 to a connected TCP endpoint. Includes optional iptables firewall management and
@@ -55,11 +55,11 @@ class UDPToTCPGateway:
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
-        return logging.getLogger('multicast-gateway')
+        return logging.getLogger('broadcast-gateway')
     
     async def start(self):
         """Start the gateway service."""
-        self.logger.info(f"Starting multicast gateway: UDP:{self.config.udp_port} -> TCP:{self.config.tcp_host}:{self.config.tcp_port}")
+        self.logger.info(f"Starting broadcast gateway: UDP:{self.config.udp_port} -> TCP:{self.config.tcp_host}:{self.config.tcp_port}")
         
         if self.config.enable_firewall:
             await self._setup_firewall()
@@ -78,7 +78,7 @@ class UDPToTCPGateway:
     
     async def stop(self):
         """Stop the gateway service."""
-        self.logger.info("Stopping multicast gateway...")
+        self.logger.info("Stopping broadcast gateway...")
         self._shutdown = True
         
         # Cancel connection task
@@ -280,7 +280,7 @@ class UDPProtocol(asyncio.DatagramProtocol):
 
 async def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description='UDP to TCP Multicast Gateway')
+    parser = argparse.ArgumentParser(description='UDP to TCP Broadcast Gateway')
     parser.add_argument('--udp-port', type=int, default=50222, help='UDP port to listen on')
     parser.add_argument('--tcp-host', required=True, help='TCP host to connect to')
     parser.add_argument('--tcp-port', type=int, default=8888, help='TCP port to connect to')
